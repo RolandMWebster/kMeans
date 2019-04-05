@@ -36,15 +36,16 @@ c2_data <- data.frame("cluster" = "B",
                       "y" = rnorm(100,3,1))
 
 # Join clusters together
-data <- rbind(c1_data,
-              c2_data)
+sample_data <- rbind(c1_data,
+                     c2_data)
 ```
 
 We'll plot the data to show the two clusters:
 
 ```{r}
 # Plot
-ggplot(data,aes(x = x, y = y, col = cluster)) +
+ggplot(sample_data,
+       aes(x = x, y = y, col = cluster)) +
   geom_point() +
   theme_minimal()
 ```
@@ -60,10 +61,10 @@ We need to start by shuffling our data and removing the cluster column we create
 set.seed(0216)
 
 # shuffle data
-data <- sample(data)
+sample_data <- sample(sample_data)
 
 # remove cluster column in preperation for k-means algorithm
-data <- data %>%
+sample_data <- sample_data %>%
   dplyr::select(-cluster)
 ```
 
@@ -72,7 +73,7 @@ data <- data %>%
 Now we can code our k-Means algorithm. The outline of the k-means clustering algorithm is:
 
 1. Sample k points from the data as initial mean values for clusters,
-2. calculate the distance from each data point to each of the k means (we are usign Euclidean distance),
+2. calculate the distance from each data point to each of the k means (we are using Euclidean distance),
 3. for each point use the smallest distance measurement to determine its cluster,
 4. calculate the new cluster means by taking the mean value of each point within the cluster,
 5. repeat for given number of iterations.
@@ -168,7 +169,7 @@ Now we can use the function to generate our results:
 
 ```{r}
 # Use function:
-results <- kMeansVersionRo(data, k = 2, iterations = 5)
+results <- kMeansVersionRo(sample_data, k = 2, iterations = 5)
 ```
 
 Let's see what it came up with:
@@ -217,4 +218,39 @@ p <- ggplot() +
 
 # Animate plot by iteration
 p + transition_manual(Iteration) + labs(title = "k-Means Iteration: {frame}")
+```
+
+## Using 3 Clusters
+
+We can also try with three clusters and see what the result is:
+
+```{r, message = FALSE}
+results_3c <- kMeansVersionRo(sample_data, k = 3, iterations = 5)
+
+# Data
+plot_points_3c <- ldply(results_3c$data)
+
+# Means
+plot_means_3c <- ldply(results_3c$means)
+
+# Plot
+p_3c <- ggplot() +
+  geom_point(data = plot_points_3c,
+             aes(x = x,
+                 y = y,
+                 col = as.factor(kmeanid)),
+             size = 2,
+             alpha = 0.8,
+             shape = 4) +
+  geom_point(data = plot_means_3c,
+             aes(x = x,
+                 y = y,
+                 col = as.factor(kmeanid)),
+             size = 5)+
+  theme_minimal() +
+  guides(col = guide_legend(title = "Cluster")) +
+  theme(plot.title = element_text(size = 20))
+
+# Animate plot by iteration
+p_3c + transition_manual(Iteration) + labs(title = "k-Means Iteration: {frame}")
 ```

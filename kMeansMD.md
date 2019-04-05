@@ -38,15 +38,16 @@ c2_data <- data.frame("cluster" = "B",
                       "y" = rnorm(100,3,1))
 
 # Join clusters together
-data <- rbind(c1_data,
-              c2_data)
+sample_data <- rbind(c1_data,
+                     c2_data)
 ```
 
 We'll plot the data to show the two clusters:
 
 ``` r
 # Plot
-ggplot(data,aes(x = x, y = y, col = cluster)) +
+ggplot(sample_data,
+       aes(x = x, y = y, col = cluster)) +
   geom_point() +
   theme_minimal()
 ```
@@ -65,10 +66,10 @@ We need to start by shuffling our data and removing the cluster column we create
 set.seed(0216)
 
 # shuffle data
-data <- sample(data)
+sample_data <- sample(sample_data)
 
 # remove cluster column in preperation for k-means algorithm
-data <- data %>%
+sample_data <- sample_data %>%
   dplyr::select(-cluster)
 ```
 
@@ -78,7 +79,7 @@ k-Means Algorithm
 Now we can code our k-Means algorithm. The outline of the k-means clustering algorithm is:
 
 1.  Sample k points from the data as initial mean values for clusters,
-2.  calculate the distance from each data point to each of the k means (we are usign Euclidean distance),
+2.  calculate the distance from each data point to each of the k means (we are using Euclidean distance),
 3.  for each point use the smallest distance measurement to determine its cluster,
 4.  calculate the new cluster means by taking the mean value of each point within the cluster,
 5.  repeat for given number of iterations.
@@ -174,7 +175,7 @@ Now we can use the function to generate our results:
 
 ``` r
 # Use function:
-results <- kMeansVersionRo(data, k = 2, iterations = 5)
+results <- kMeansVersionRo(sample_data, k = 2, iterations = 5)
 ```
 
     ## [1] "Iteration: 1"
@@ -190,10 +191,10 @@ results$means[[5]]
 ```
 
     ## # A tibble: 2 x 4
-    ##        y       x kmeanid Iteration
-    ##    <dbl>   <dbl>   <int>     <int>
-    ## 1  2.75   2.96         1         5
-    ## 2 -0.157 -0.0274       2         5
+    ##         y     x kmeanid Iteration
+    ##     <dbl> <dbl>   <int>     <int>
+    ## 1  2.95   2.96        1         5
+    ## 2 -0.0457 0.107       2         5
 
 Plot Clusters
 -------------
@@ -211,25 +212,25 @@ plot_means <- ldply(results$means)
 head(plot_points)
 ```
 
-    ##   index  Distance kmeanid          y           x Iteration
-    ## 1     1 1.3598212       2  0.2332556  1.59871533         1
-    ## 2     2 2.3411766       2 -1.0300889  1.48120629         1
-    ## 3     3 1.7220237       2  0.1929586  2.02095236         1
-    ## 4     4 0.6987375       2  0.9585136 -0.10229219         1
-    ## 5     5 0.5461601       2  0.8897000  0.08432531         1
-    ## 6     6 2.3654901       2 -1.1057578  1.35159780         1
+    ##   index Distance kmeanid            y          x Iteration
+    ## 1     1 3.267488       2 -0.698027187 -0.6237820         1
+    ## 2     2 1.866822       2 -1.738678542  1.1962582         1
+    ## 3     3 2.187212       2  1.079959085  1.1888203         1
+    ## 4     4 2.099399       2 -1.016357229  0.5923242         1
+    ## 5     5 2.039984       2  0.147547907  0.7257705         1
+    ## 6     6 2.897824       2  0.003793546 -0.2026355         1
 
 ``` r
 head(plot_means)
 ```
 
     ##             y         x kmeanid Iteration
-    ## 1  4.33750341 3.9871566       1         1
-    ## 2  1.12875420 0.5753893       2         1
-    ## 3  3.11495833 3.3283438       1         2
-    ## 4  0.38558842 0.5385488       2         2
-    ## 5  2.89899746 3.0407273       1         3
-    ## 6 -0.04700064 0.1593616       2         3
+    ## 1  3.86366638 2.9445493       1         1
+    ## 2 -0.55594589 2.6406158       2         1
+    ## 3  3.06984246 2.8736119       1         2
+    ## 4  0.02124678 0.3402096       2         2
+    ## 5  2.95333189 2.9580019       1         3
+    ## 6 -0.04565449 0.1069915       2         3
 
 Now we can plot:
 
@@ -257,3 +258,49 @@ p + transition_manual(Iteration) + labs(title = "k-Means Iteration: {frame}")
 ```
 
 ![](kMeansMD_files/figure-markdown_github/unnamed-chunk-9-1.gif)
+
+Using 3 Clusters
+----------------
+
+We can also try with three clusters and see what the result is:
+
+``` r
+results_3c <- kMeansVersionRo(sample_data, k = 3, iterations = 5)
+```
+
+    ## [1] "Iteration: 1"
+    ## [1] "Iteration: 2"
+    ## [1] "Iteration: 3"
+    ## [1] "Iteration: 4"
+    ## [1] "Iteration: 5"
+
+``` r
+# Data
+plot_points_3c <- ldply(results_3c$data)
+
+# Means
+plot_means_3c <- ldply(results_3c$means)
+
+# Plot
+p_3c <- ggplot() +
+  geom_point(data = plot_points_3c,
+             aes(x = x,
+                 y = y,
+                 col = as.factor(kmeanid)),
+             size = 2,
+             alpha = 0.8,
+             shape = 4) +
+  geom_point(data = plot_means_3c,
+             aes(x = x,
+                 y = y,
+                 col = as.factor(kmeanid)),
+             size = 5)+
+  theme_minimal() +
+  guides(col = guide_legend(title = "Cluster")) +
+  theme(plot.title = element_text(size = 20))
+
+# Animate plot by iteration
+p_3c + transition_manual(Iteration) + labs(title = "k-Means Iteration: {frame}")
+```
+
+![](kMeansMD_files/figure-markdown_github/unnamed-chunk-10-1.gif)
