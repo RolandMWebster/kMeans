@@ -1,5 +1,4 @@
 # Packages ----------------------------------------------------------------
-
 library(tidyr)
 library(plyr)
 library(dplyr)
@@ -7,6 +6,8 @@ library(ggplot2)
 library(gganimate)
 
 # Generate Data -----------------------------------------------------------
+
+# We generate some data using 2 different normal distributions
 
 # data for cluster 1
 c1_data <- data.frame("cluster" = "A",
@@ -32,15 +33,14 @@ set.seed(0216)
 # shuffle data
 data <- sample(data)
 
-# remove cluster column
+# remove cluster column in preperation for k-means algorithm
 data <- data %>%
   dplyr::select(-cluster)
 
 
-
 # K-Means Clustering ------------------------------------------------------
 
-kMeansVersionRo <- function(data, k = 2, iterations = 10){
+kMeansVersionRo <- function(data, clusters, iterations){
   
   # STEP 1: INITIALIZE LISTS
   
@@ -49,15 +49,12 @@ kMeansVersionRo <- function(data, k = 2, iterations = 10){
   
   # intiialize closest distances list
   closest_distances_list <- vector("list", length = iterations)
-  
-  # Initialize plots
-  plots_list <- vector("list", length = iterations)
-  
+
   # STEP 2: GET STARTING MEANS
   
   # Get starting means - from random sampled points in the data set
   means <- sample_n(data,
-                    k,
+                    clusters,
                     replace = FALSE)
 
   
@@ -68,13 +65,13 @@ kMeansVersionRo <- function(data, k = 2, iterations = 10){
   
     # Put current means into means_list
     means_list[[i]] <- means %>%
-      mutate(kmeanid = 1:k,
+      mutate(kmeanid = 1:clusters,
              Iteration = i)
     
     # Calculate Euclidean distance from each observation to each mean
-    distances <- vector("list", length = k)
+    distances <- vector("list", length = clusters)
     
-    for (j in 1:k){
+    for (j in 1:clusters){
       distances[[j]] <- ldply(apply(data,
                                     1,
                                     FUN = function(x){
@@ -84,8 +81,8 @@ kMeansVersionRo <- function(data, k = 2, iterations = 10){
     
     # Pull together into one dataframe
     distances <- ldply(distances) %>%
-      mutate(index = ((row_number() - 1) %/% k) + 1,
-             index = rep(seq(nrow(data)), k)) %>%
+      mutate(index = ((row_number() - 1) %/% clusters) + 1,
+             index = rep(seq(nrow(data)), clusters)) %>%
       rename("Distance" = V1)
     
     # add index to data
@@ -107,19 +104,6 @@ kMeansVersionRo <- function(data, k = 2, iterations = 10){
     # Store closest_distances
     closest_distances_list[[i]] <- closest_distances
     
-    # Store the plot
-    plots_list[[i]] <- ggplot() +
-      geom_point(data = closest_distances,
-                 aes(x = x,
-                     y = y,
-                     col = as.factor(kmeanid))) +
-      geom_point(data = means,
-                 aes(x = x,
-                     y = y),
-                 color = c("red","blue"),
-                 size = 5) +
-      ggtitle(paste0("K-Means Clustering Iteration: ", i))
-    
     # Update means
     means <- closest_distances %>%
       dplyr::select(-c(index,Distance, Iteration)) %>%
@@ -133,15 +117,16 @@ kMeansVersionRo <- function(data, k = 2, iterations = 10){
 
   }
   
+  # STEP 4: RETURN OUTPUT
+  
   output <- list("means" = means_list,
-                 "data" = closest_distances_list,
-                 "plots" = plots_list)
+                 "data" = closest_distances_list)
   
   
 }
 
 # Use function:
-cluster_means <- kMeansVersionRo(data, k = 3, iterations = 5)
+cluster_means <- kMeansVersionRo(data, k = 2, iterations = 5)
 
 
 # Animation Plot ----------------------------------------------------------
